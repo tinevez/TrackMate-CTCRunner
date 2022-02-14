@@ -25,6 +25,10 @@ import static fiji.plugin.trackmate.gui.Fonts.SMALL_FONT;
 
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.util.Map;
 
 import javax.swing.Box;
@@ -41,7 +45,8 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.border.EmptyBorder;
 
-import fiji.plugin.trackmate.features.FeatureFilter;
+import fiji.plugin.trackmate.ctc.model.AbstractSweepModel.ModelListener;
+import fiji.plugin.trackmate.ctc.model.filter.FeatureFilterModel;
 
 public class FilterPanel extends JPanel
 {
@@ -58,8 +63,11 @@ public class FilterPanel extends JPanel
 
 	private JRadioButton rdnbtnAbove;
 
-	public FilterPanel( final Map< String, String > keyNames, final FeatureFilter filter )
+	private final FeatureFilterModel filter;
+
+	public FilterPanel( final Map< String, String > keyNames, final FeatureFilterModel filter )
 	{
+		this.filter = filter;
 		setLayout( new BoxLayout( this, BoxLayout.LINE_AXIS ) );
 		setBorder( new EmptyBorder( 5, 5, 5, 5 ) );
 		setPreferredSize( panelSize );
@@ -84,11 +92,12 @@ public class FilterPanel extends JPanel
 		add( cmbboxFeatureKeys );
 		add( Box.createHorizontalStrut( 10 ) );
 
-		ftfThreshold = new JFormattedTextField( Double.valueOf( filter.value ) );
+		ftfThreshold = new JFormattedTextField( Double.valueOf( filter.getThreshold() ) );
 		ftfThreshold.setColumns( 6 );
 		ftfThreshold.setHorizontalAlignment( JFormattedTextField.RIGHT );
 		ftfThreshold.setFont( SMALL_FONT );
 		add( ftfThreshold );
+		fiji.plugin.trackmate.gui.GuiUtils.selectAllOnFocus( ftfThreshold );
 		add( Box.createHorizontalStrut( 10 ) );
 
 		rdnbtnAbove = new JRadioButton( "Above" );
@@ -103,17 +112,49 @@ public class FilterPanel extends JPanel
 		buttonGroup.add( rdbtnBelow );
 		buttonGroup.add( rdnbtnAbove );
 
-		// Set default values.
-		cmbboxFeatureKeys.setSelectedItem( filter.feature );
-		rdnbtnAbove.setSelected( filter.isAbove );
-		rdbtnBelow.setSelected( !filter.isAbove );
+		/*
+		 * Wire listeners.
+		 */
+
+		// Model -> UI.
+		final ModelListener filterListener = () -> {
+			cmbboxFeatureKeys.setSelectedItem( filter.getFeature() );
+			rdnbtnAbove.setSelected( filter.isAbove() );
+			rdbtnBelow.setSelected( !filter.isAbove() );
+			ftfThreshold.setValue( Double.valueOf( filter.getThreshold() ) );
+		};
+		// Set default value.
+		filterListener.modelChanged();
+		filter.listeners().add( filterListener );
+		// UI -> model.
+		final ItemListener il = new ItemListener()
+		{
+			@Override
+			public void itemStateChanged( final ItemEvent e )
+			{
+				// Only fire once for the one who gets selected.
+				if ( e.getStateChange() == ItemEvent.SELECTED )
+					filter.setAbove( rdnbtnAbove.isSelected() );
+			}
+		};
+		rdnbtnAbove.addItemListener( il );
+		rdbtnBelow.addItemListener( il );
+		final ActionListener al = e -> filter.threshold( ( ( Number ) ftfThreshold.getValue() ).doubleValue() );
+		ftfThreshold.addActionListener( al );
+		cmbboxFeatureKeys.addActionListener( al );
+		final FocusAdapter fa = new FocusAdapter()
+		{
+			@Override
+			public void focusLost( final java.awt.event.FocusEvent e )
+			{
+				al.actionPerformed( null );
+			}
+		};
+		ftfThreshold.addFocusListener( fa );
 	}
 
-	public FeatureFilter getFilter()
+	public FeatureFilterModel getFilterModel()
 	{
-		return new FeatureFilter(
-				( String ) cmbboxFeatureKeys.getSelectedItem(),
-				( ( Number ) ftfThreshold.getValue() ).doubleValue(),
-				rdnbtnAbove.isSelected() );
+		return filter;
 	}
 }

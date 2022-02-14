@@ -29,7 +29,6 @@ import static fiji.plugin.trackmate.gui.Icons.REMOVE_ICON;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.util.ArrayList;
 import java.util.EmptyStackException;
 import java.util.Iterator;
 import java.util.List;
@@ -44,7 +43,8 @@ import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 
 import fiji.plugin.trackmate.Settings;
-import fiji.plugin.trackmate.features.FeatureFilter;
+import fiji.plugin.trackmate.ctc.model.filter.FeatureFilterModel;
+import fiji.plugin.trackmate.ctc.model.filter.FilterConfigModel;
 import fiji.plugin.trackmate.gui.displaysettings.DisplaySettings.TrackMateObject;
 import fiji.plugin.trackmate.providers.SpotMorphologyAnalyzerProvider;
 import ij.ImagePlus;
@@ -66,16 +66,19 @@ public class FilterConfigPanel extends JPanel
 
 	private final String defaultFeature;
 
+	private final FilterConfigModel filterModel;
+
 	/*
 	 * CONSTRUCTOR
 	 */
 
-	public FilterConfigPanel( 
+	public FilterConfigPanel(
 			final TrackMateObject target,
 			final String defaultFeature,
 			final ImagePlus imp,
-			final List< FeatureFilter > filters )
+			final FilterConfigModel filterModel )
 	{
+		this.filterModel = filterModel;
 		// Config a settings so that we can get all available features.
 		this.settings = new Settings( imp );
 		settings.addAllAnalyzers();
@@ -137,12 +140,12 @@ public class FilterConfigPanel extends JPanel
 
 		buttonsPanel.add( Box.createHorizontalGlue() );
 		buttonsPanel.add( Box.createHorizontalStrut( 5 ) );
-		
+
 		/*
 		 * Default values.
 		 */
 
-		for ( final FeatureFilter filter : filters )
+		for ( final FeatureFilterModel filter : filterModel )
 			addFilter( filter );
 
 		/*
@@ -160,14 +163,19 @@ public class FilterConfigPanel extends JPanel
 
 	private void addFilter( final String feature )
 	{
-		final FeatureFilter filter = new FeatureFilter( feature, 0., true );
+		final FeatureFilterModel filter = new FeatureFilterModel();
+		filter.feature( feature );
+		filter.setAbove( true );
+		filter.threshold( 0. );
 		addFilter( filter );
 	}
 
-	private void addFilter( final FeatureFilter filter )
+	private void addFilter( final FeatureFilterModel filter )
 	{
 		final Map< String, String > featureNames = collectFeatureKeys( target, null, settings );
 		final FilterPanel tp = new FilterPanel( featureNames, filter );
+
+		filterModel.add( filter );
 
 		final Component strut = Box.createVerticalStrut( 5 );
 		struts.push( strut );
@@ -184,12 +192,12 @@ public class FilterConfigPanel extends JPanel
 		if ( !it.hasNext() )
 			return ""; // It's likely something is not right.
 
-		final List< FeatureFilter > featureFilters = getFeatureFilters();
-		if ( featureFilters.isEmpty() )
+		final List< FeatureFilterModel > models = filterModel.getModels();
+		if ( models.isEmpty() )
 			return ( defaultFeature == null || !featureNames.keySet().contains( defaultFeature ) ) ? it.next() : defaultFeature;
 
-		final FeatureFilter lastFilter = featureFilters.get( featureFilters.size() - 1 );
-		final String lastFeature = lastFilter.feature;
+		final FeatureFilterModel lastFilter = models.get( models.size() - 1 );
+		final String lastFeature = lastFilter.getFeature();
 		while ( it.hasNext() )
 			if ( it.next().equals( lastFeature ) && it.hasNext() )
 				return it.next();
@@ -202,6 +210,9 @@ public class FilterConfigPanel extends JPanel
 		try
 		{
 			final FilterPanel tp = filterPanels.pop();
+
+			filterModel.remove( tp.getFilterModel() );
+
 			final Component strut = struts.pop();
 			allThresholdsPanel.remove( strut );
 			allThresholdsPanel.remove( tp );
@@ -209,12 +220,5 @@ public class FilterConfigPanel extends JPanel
 		}
 		catch ( final EmptyStackException ese )
 		{}
-	}
-
-	public List< FeatureFilter > getFeatureFilters()
-	{
-		final List< FeatureFilter > list = new ArrayList<>( filterPanels.size() );
-		filterPanels.forEach( fp -> list.add( fp.getFilter() ) );
-		return list;
 	}
 }

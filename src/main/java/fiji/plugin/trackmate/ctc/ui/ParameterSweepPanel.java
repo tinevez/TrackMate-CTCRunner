@@ -92,7 +92,6 @@ public class ParameterSweepPanel extends JPanel
 
 	private final FilterConfigPanel panelTrackFilters;
 
-	private final ParameterSweepModel model;
 
 	final JButton btnRun;
 
@@ -112,7 +111,6 @@ public class ParameterSweepPanel extends JPanel
 			final CTCResultsCrawler crawler,
 			final String gtPath )
 	{
-		this.model = model;
 		this.crawler = crawler;
 		this.enablers = new ArrayList<>();
 
@@ -546,15 +544,5 @@ public class ParameterSweepPanel extends JPanel
 		};
 		model.listeners().add( l1 );
 		l1.modelChanged();
-	}
-
-	/**
-	 * Reads the spot and track filters from the GUI and put them in the model.
-	 */
-	void refresh()
-	{
-		// Forced to do that because of how we set the filters.
-		model.setSpotFilters( panelSpotFilters.getFeatureFilters() );
-		model.setTrackFilters( panelTrackFilters.getFeatureFilters() );
 	}
 }

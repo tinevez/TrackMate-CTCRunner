@@ -23,7 +23,6 @@ package fiji.plugin.trackmate.ctc.model;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -46,13 +45,13 @@ import fiji.plugin.trackmate.ctc.model.detector.StarDistCustomDetectorModel;
 import fiji.plugin.trackmate.ctc.model.detector.StarDistDetectorModel;
 import fiji.plugin.trackmate.ctc.model.detector.ThresholdDetectorModel;
 import fiji.plugin.trackmate.ctc.model.detector.WekaDetectorModel;
+import fiji.plugin.trackmate.ctc.model.filter.FilterConfigModel;
 import fiji.plugin.trackmate.ctc.model.tracker.KalmanTrackerModel;
 import fiji.plugin.trackmate.ctc.model.tracker.LAPTrackerModel;
 import fiji.plugin.trackmate.ctc.model.tracker.NearestNeighborTrackerModel;
 import fiji.plugin.trackmate.ctc.model.tracker.OverlapTrackerModel;
 import fiji.plugin.trackmate.ctc.model.tracker.SimpleLAPTrackerModel;
 import fiji.plugin.trackmate.ctc.model.tracker.TrackerSweepModel;
-import fiji.plugin.trackmate.features.FeatureFilter;
 
 public class ParameterSweepModel
 {
@@ -65,9 +64,9 @@ public class ParameterSweepModel
 
 	private final Map< String, Boolean > active = new HashMap<>();
 
-	private final List< FeatureFilter > spotFilters = new ArrayList<>();
+	private final FilterConfigModel spotFilters = new FilterConfigModel();
 
-	private final List< FeatureFilter > trackFilters = new ArrayList<>();
+	private final FilterConfigModel trackFilters = new FilterConfigModel();
 
 	public ParameterSweepModel()
 	{
@@ -147,26 +146,14 @@ public class ParameterSweepModel
 			notifyListeners();
 	}
 
-	public List< FeatureFilter > getSpotFilters()
+	public FilterConfigModel getSpotFilters()
 	{
-		return Collections.unmodifiableList( spotFilters );
+		return spotFilters;
 	}
 
-	public List< FeatureFilter > getTrackFilters()
+	public FilterConfigModel getTrackFilters()
 	{
-		return Collections.unmodifiableList( trackFilters );
-	}
-
-	public void setSpotFilters( final List< FeatureFilter > spotFilters )
-	{
-		this.spotFilters.clear();
-		this.spotFilters.addAll( spotFilters );
-	}
-
-	public void setTrackFilters( final List< FeatureFilter > trackFilters )
-	{
-		this.trackFilters.clear();
-		this.trackFilters.addAll( trackFilters );
+		return trackFilters;
 	}
 
 	public List< DetectorSweepModel > getActiveDetectors()

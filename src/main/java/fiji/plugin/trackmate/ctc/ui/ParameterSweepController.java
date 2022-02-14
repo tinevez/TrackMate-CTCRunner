@@ -72,6 +72,8 @@ public class ParameterSweepController implements Cancelable
 		final File saveFolder = modelFile.getParentFile();
 		model = ParameterSweepModelIO.readFrom( modelFile );
 		crawler = new CTCResultsCrawler( Logger.DEFAULT_LOGGER );
+		
+		model.listeners().add( () -> System.out.println( model.getSpotFilters() ) ); // DEBUG
 
 		gui = new ParameterSweepPanel( imp, model, crawler, gtPath );
 		gui.btnRun.addActionListener( e -> run() );
@@ -92,11 +94,7 @@ public class ParameterSweepController implements Cancelable
 		crawler.watch( saveFolder.getAbsolutePath() );
 
 		// Save on model modification.
-		model.listeners().add( () -> 
-		{
-			gui.refresh();
-			ParameterSweepModelIO.saveTo( modelFile, model );
-		} );
+		model.listeners().add( () -> ParameterSweepModelIO.saveTo( modelFile, model ) );
 
 		frame = new JFrame( "TrackMate Helper" );
 		frame.addWindowListener( new WindowAdapter()
@@ -116,8 +114,6 @@ public class ParameterSweepController implements Cancelable
 	private void run()
 	{
 		cancelReason = null;
-		// Refresh model :(
-		gui.refresh();
 		gui.enablers.forEach( EverythingDisablerAndReenabler::disable );
 		gui.btnRun.setVisible( false );
 		gui.btnStop.setVisible( true );
@@ -139,8 +135,8 @@ public class ParameterSweepController implements Cancelable
 					runner.setBatchLogger( gui.logger );
 
 					final Settings base = new Settings( imp );
-					base.setSpotFilters( model.getSpotFilters() );
-					base.setTrackFilters( model.getTrackFilters() );
+					base.setSpotFilters( model.getSpotFilters().toFeatureFilters() );
+					base.setTrackFilters( model.getTrackFilters().toFeatureFilters() );
 					int progress = 0;
 					for ( final DetectorSweepModel detectorModel : model.getActiveDetectors() )
 					{
